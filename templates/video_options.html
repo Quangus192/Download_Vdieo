@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chọn Định Dạng Video Để Tải Xuống</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            position: relative;
+        }
+        h1 {
+            color: #009688;
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        table:hover {
+            transform: translateY(-10px); /* Hiệu ứng bay khi di chuột */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); /* Đổ bóng sâu hơn */
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #009688;
+            color: white;
+            text-align: center;
+        }
+        td {
+            text-align: center;
+            color: #333;
+        }
+        td .quality-label {
+            font-weight: bold; /* Làm nổi bật cả cụm chữ */
+            font-size: 16px; /* Tăng kích thước chữ nếu cần */
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #009688;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        button:hover {
+            background-color: #00796b;
+            transform: translateY(-5px); /* Hiệu ứng bay khi di chuột */
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2); /* Đổ bóng sâu hơn */
+        }
+        .info-message {
+            background-color: #e0f7fa;
+            border: 1px solid #00796b;
+            color: #00796b;
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .info-message strong {
+            font-weight: bold;
+        }
+        .back-button {
+            display: block;
+            margin: 20px auto;
+            text-align: center;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .back-button a {
+            padding: 10px 20px;
+            background-color: #009688;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .back-button a:hover {
+            background-color: #00796b;
+            transform: translateY(-5px); /* Hiệu ứng bay khi di chuột */
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2); /* Đổ bóng sâu hơn */
+        }
+        /* CSS cho loading spinner */
+        #loading-spinner {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            top: 50%;
+            width: 60px;
+            height: 60px;
+            margin: -30px 0 0 -30px;
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #009688;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay" id="overlay"></div> <!-- Overlay che phủ trang khi loading -->
+    <div id="loading-spinner"></div> <!-- Spinner loading -->
+    
+    <h1>Chọn Định Dạng Video Để Tải Xuống</h1>
+    <table>
+        <tr>
+            <th>Chất lượng</th>
+            <th>Định dạng</th>
+            <th>Dung lượng</th>
+            <th>Download</th>
+        </tr>
+        {% for format in video_formats %}
+        <tr>
+            <td class="quality-label">
+                {{ format.height }}p 
+                ({% if format.height == 720 %} SD 
+                  {% elif format.height == 1080 %} HD 
+                  {% elif format.height == 1280 %} HD 
+                  {% elif format.height == 1920 %} FULL HD 
+                  {% else %} {{ format.format_note }} 
+                {% endif %})
+            </td>
+            <td>{{ format.ext }}</td>
+            <td>
+                {% if format.filesize %}
+                    {{ (format.filesize / (1024*1024)) | round(2) }} MB
+                {% else %}
+                    None
+                {% endif %}
+            </td>
+            <td>
+                {% if format.height > 1280 %}
+                    <form method="GET" action="{{ url_for('render_video', format_id=format['format_id']) }}" onsubmit="showLoadingSpinner()">
+                        <input type="hidden" name="url" value="{{ url }}">
+                        <button type="submit">Render</button>
+                    </form>
+                {% else %}
+                    <form method="GET" action="{{ url_for('download_video', format_id=format['format_id']) }}" onsubmit="showLoadingSpinner()">
+                        <input type="hidden" name="url" value="{{ url }}">
+                        <button type="submit">Download</button>
+                    </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- Nút "Tải xuống video Fb khác" -->
+    <div class="back-button">
+        <a href="{{ url_for('index') }}">Tải xuống video Fb khác</a>
+    </div>
+
+    <!-- Thêm phần thông báo hướng dẫn -->
+    <div class="info-message">
+        <strong>* Đối với video chất lượng cao:</strong> Facebook không cho phép tải xuống các tệp có âm thanh, vì vậy phải tải chúng riêng biệt, sau đó ghép video và âm thanh vào. Phải mất một thời gian để Render.
+    </div>
+
+    <script>
+        function showLoadingSpinner() {
+            document.getElementById('loading-spinner').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';  // Hiển thị overlay
+        }
+    </script>
+</body>
+</html>
